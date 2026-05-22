@@ -130,18 +130,27 @@ def _call_claude_for_semantic_processing(segments: list[dict], api_key: str, bas
     Use Claude API to:
     1. Identify and remove abandoned restart fragments (rule 3.5)
     2. Insert topic headings at topic transitions (rule 3.9)
+
+    Processes in batches to avoid proxy/gateway size limits.
     """
-    client_kwargs = {"api_key": api_key}
+    client_kwargs = {"api_key": api_key, "timeout": 300.0}
     if base_url:
         client_kwargs["base_url"] = base_url
     client = anthropic.Anthropic(**client_kwargs)
 
-    full_text = ""
-    for i, seg in enumerate(segments):
-        speaker_label = "访谈者" if seg["speaker"] == 1 else f"发言人{seg['speaker']}"
-        full_text += f"[段落{i}][{speaker_label}]\n{seg['text']}\n\n"
+    BATCH_SIZE = 15
+    all_processed = []
 
-    prompt = f"""你是一个访谈逐字稿清洗助手。请对以下逐字稿执行两个任务：
+    for batch_start in range(0, len(segments), BATCH_SIZE):
+        batch = segments[batch_start:batch_start + BATCH_SIZE]
+
+        batch_text = ""
+        for i, seg in enumerate(batch):
+            global_idx = batch_start + i
+            speaker_label = "访谈者" if seg["speaker"] == 1 else f"发言人{seg['speaker']}"
+            batch_text += f"[段落{global_idx}][{speaker_label}]\n{seg['text']}\n\n"
+
+        prompt = f"""你是一个访谈逐字稿清洗助手。请对以下逐字稿片段执行两个任务：
 
 ## 任务1：识别并删除废弃重启片段
 说话人说到一半放弃、重新组织语言的部分，只保留重启后的最终表达。
@@ -166,37 +175,52 @@ def _call_claude_for_semantic_processing(segments: list[dict], api_key: str, bas
 每个segment的index对应输入段落编号，text是清洗后的内容（只做废弃片段删除，不改写其他内容），heading_before是该段落前需要插入的小标题（null表示不需要）。
 
 ## 逐字稿内容：
-{full_text}"""
+{batch_text}"""
 
-    response = client.messages.create(
-        model=model,
-        max_tokens=8000,
-        messages=[{"role": "user", "content": prompt}],
-    )
+        try:
+            response = client.messages.create(
+                model=model,
+                max_tokens=4000,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            response_text = response.content[0].text
+        except Exception:
+            for seg in batch:
+                seg["heading_before"] = None
+                all_processed.append(seg)
+            continue
 
-    response_text = response.content[0].text
+        import json
+        json_match = re.search(r"\{[\s\S]*\}", response_text)
+        if not json_match:
+            for seg in batch:
+                seg["heading_before"] = None
+                all_processed.append(seg)
+            continue
 
-    import json
-    json_match = re.search(r"\{[\s\S]*\}", response_text)
-    if not json_match:
-        return segments
+        try:
+            result = json.loads(json_match.group())
+        except json.JSONDecodeError:
+            for seg in batch:
+                seg["heading_before"] = None
+                all_processed.append(seg)
+            continue
 
-    try:
-        result = json.loads(json_match.group())
-    except json.JSONDecodeError:
-        return segments
+        cleaned = result.get("cleaned_segments", [])
+        cleaned_map = {item.get("index"): item for item in cleaned}
 
-    cleaned = result.get("cleaned_segments", [])
-    processed_segments = []
-    for item in cleaned:
-        idx = item.get("index", 0)
-        if idx < len(segments):
-            seg = segments[idx].copy()
-            seg["text"] = item.get("text", seg["text"])
-            seg["heading_before"] = item.get("heading_before")
-            processed_segments.append(seg)
+        for i, seg in enumerate(batch):
+            global_idx = batch_start + i
+            if global_idx in cleaned_map:
+                seg_copy = seg.copy()
+                seg_copy["text"] = cleaned_map[global_idx].get("text", seg["text"])
+                seg_copy["heading_before"] = cleaned_map[global_idx].get("heading_before")
+                all_processed.append(seg_copy)
+            else:
+                seg["heading_before"] = None
+                all_processed.append(seg)
 
-    return processed_segments if processed_segments else segments
+    return all_processed if all_processed else segments
 
 
 def _build_output_document(segments: list[dict], title: str) -> Document:
