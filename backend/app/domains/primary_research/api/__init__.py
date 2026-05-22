@@ -30,7 +30,8 @@ def _process_transcript(interview_id: str, input_path: str):
         if not interview:
             return
 
-        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        from app.config import settings as app_settings
+        api_key = app_settings.anthropic_api_key
         if not api_key:
             interview.status = "failed"
             db.commit()
