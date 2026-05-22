@@ -1,6 +1,16 @@
-# Market Monitor - 市场情报追踪系统
+# UX Research Workbench - 用户研究工作台
 
-AI转录、翻译、商务办公领域的竞品/新品动态及行业新闻追踪平台。
+AI转录、翻译、商务办公领域的用户研究一站式工作平台。涵盖桌面研究、一手研究、分析综合、交付管理全流程。
+
+## 平台模块
+
+| 模块 | 说明 | 状态 |
+|------|------|------|
+| 研究规划 | 项目管理、研究计划、受访者招募 | 开发中 |
+| 桌面研究 | 市场情报采集、竞品分析、评论挖掘 | 部分完成 |
+| 一手研究 | 访谈逐字稿处理、问卷生成、可用性测试 | 开发中 |
+| 分析综合 | 编码标注、亲和图、主题分析、用户画像 | 规划中 |
+| 知识库 | 研究报告、洞察库、精华片段 | 规划中 |
 
 ## 快速启动
 
@@ -26,26 +36,8 @@ npm run dev
 
 打开浏览器访问 http://localhost:3000
 
-## 使用流程
-
-1. 打开 Dashboard 首页查看概览
-2. 进入「爬虫管理」页面，点击按钮触发数据采集
-3. 在「文章/新闻」页面浏览采集的行业资讯
-4. 在「产品/新品」页面浏览产品信息
-5. 在「趋势分析」页面查看数据可视化
-
-## 已实现的爬虫
-
-| 爬虫 | 数据源 | 采集内容 |
-|------|--------|----------|
-| TechCrunch | techcrunch.com (RSS) | 行业新闻 |
-| The Verge | theverge.com (RSS) | 科技新闻 |
-| Kickstarter | kickstarter.com | 众筹新品 |
-| Indiegogo | indiegogo.com | 众筹新品 |
-| Amazon (US) | amazon.com | 产品排行 |
-
 ## 技术栈
 
 - 后端: Python / FastAPI / SQLAlchemy / httpx / BeautifulSoup4
-- 前端: Next.js 16 / React / Tailwind CSS / Recharts / SWR
+- 前端: Next.js 16 / React 19 / Tailwind CSS / Recharts / SWR
 - 数据库: SQLite (零配置，数据文件自动创建)

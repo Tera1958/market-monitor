@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     database_url: str = "sqlite:///./market_monitor.db"
-    app_name: str = "Market Monitor"
+    app_name: str = "UX Research Workbench"
     debug: bool = True
 
     class Config:

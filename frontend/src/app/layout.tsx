@@ -9,8 +9,8 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Market Monitor - 市场情报追踪",
-  description: "AI转录翻译商务办公领域市场情报追踪系统",
+  title: "UX Research Workbench - 用户研究工作台",
+  description: "AI转录翻译商务办公领域用户研究一站式工作平台",
 };
 
 export default function RootLayout({

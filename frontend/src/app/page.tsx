@@ -2,9 +2,18 @@
 
 import { useDashboard } from "@/lib/hooks";
 import StatsCard from "@/components/StatsCard";
-import { Newspaper, Package, Tags, Clock } from "lucide-react";
+import { Newspaper, Package, Tags, Clock, FolderKanban, FileText, ClipboardList, Lightbulb } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
+import Link from "next/link";
+
+const MODULE_CARDS = [
+  { href: "/projects", label: "项目中心", desc: "研究项目管理", icon: FolderKanban, color: "bg-blue-50 text-blue-700" },
+  { href: "/desk-research/market", label: "市场情报", desc: "竞品动态采集", icon: Newspaper, color: "bg-green-50 text-green-700" },
+  { href: "/primary/interviews", label: "访谈管理", desc: "逐字稿处理", icon: FileText, color: "bg-purple-50 text-purple-700" },
+  { href: "/primary/surveys", label: "问卷中心", desc: "问卷设计生成", icon: ClipboardList, color: "bg-orange-50 text-orange-700" },
+  { href: "/analysis/insights", label: "洞察提炼", desc: "分析与综合", icon: Lightbulb, color: "bg-amber-50 text-amber-700" },
+];
 
 export default function DashboardPage() {
   const { data, error, isLoading } = useDashboard();
@@ -22,8 +31,7 @@ export default function DashboardPage() {
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
         <p className="text-yellow-800">无法连接到后端服务，请确保后端已启动。</p>
         <p className="text-sm text-yellow-600 mt-2">
-          运行 <code className="bg-yellow-100 px-1 rounded">docker-compose up</code> 启动数据库，
-          然后 <code className="bg-yellow-100 px-1 rounded">uvicorn app.main:app --reload</code> 启动后端
+          运行 <code className="bg-yellow-100 px-1 rounded">uvicorn app.main:app --reload</code> 启动后端
         </p>
       </div>
     );
@@ -36,10 +44,11 @@ export default function DashboardPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">AI转录/翻译/商务办公领域市场情报概览</p>
+        <h1 className="text-2xl font-bold text-gray-900">研究工作台</h1>
+        <p className="text-sm text-gray-500 mt-1">AI转录/翻译/商务办公领域用户研究概览</p>
       </div>
 
+      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatsCard
           title="文章总数"
@@ -69,9 +78,35 @@ export default function DashboardPage() {
         />
       </div>
 
+      {/* Quick access modules */}
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">快速进入</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+          {MODULE_CARDS.map((mod) => {
+            const Icon = mod.icon;
+            return (
+              <Link
+                key={mod.href}
+                href={mod.href}
+                className="flex items-center gap-3 p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+              >
+                <div className={`p-2 rounded-lg ${mod.color}`}>
+                  <Icon size={20} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{mod.label}</p>
+                  <p className="text-xs text-gray-500">{mod.desc}</p>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Source counts */}
       {data?.sources_count && Object.keys(data.sources_count).length > 0 && (
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">各平台文章数量</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">市场情报 — 各平台文章数量</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {Object.entries(data.sources_count).map(([platform, count]) => (
               <div key={platform} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
@@ -80,15 +115,6 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
-        </div>
-      )}
-
-      {(!data || (data.total_articles === 0 && data.total_products === 0)) && (
-        <div className="bg-white rounded-lg border border-gray-200 p-8 text-center mt-6">
-          <p className="text-gray-500 mb-4">暂无数据，请前往爬虫管理页面触发数据采集</p>
-          <a href="/crawl" className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm">
-            前往爬虫管理
-          </a>
         </div>
       )}
     </div>
