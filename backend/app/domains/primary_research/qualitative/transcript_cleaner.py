@@ -125,13 +125,16 @@ def _merge_same_speaker(segments: list[dict]) -> list[dict]:
     return merged
 
 
-def _call_claude_for_semantic_processing(segments: list[dict], api_key: str) -> list[dict]:
+def _call_claude_for_semantic_processing(segments: list[dict], api_key: str, base_url: str = "", model: str = "claude-sonnet-4-6") -> list[dict]:
     """
     Use Claude API to:
     1. Identify and remove abandoned restart fragments (rule 3.5)
     2. Insert topic headings at topic transitions (rule 3.9)
     """
-    client = anthropic.Anthropic(api_key=api_key)
+    client_kwargs = {"api_key": api_key}
+    if base_url:
+        client_kwargs["base_url"] = base_url
+    client = anthropic.Anthropic(**client_kwargs)
 
     full_text = ""
     for i, seg in enumerate(segments):
@@ -166,7 +169,7 @@ def _call_claude_for_semantic_processing(segments: list[dict], api_key: str) -> 
 {full_text}"""
 
     response = client.messages.create(
-        model="claude-sonnet-4-6",
+        model=model,
         max_tokens=8000,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -233,7 +236,7 @@ def _build_output_document(segments: list[dict], title: str) -> Document:
     return doc
 
 
-def clean_transcript(input_path: str, output_dir: str, api_key: str) -> str:
+def clean_transcript(input_path: str, output_dir: str, api_key: str, base_url: str = "", model: str = "claude-sonnet-4-6") -> str:
     """
     Main entry point: clean a raw interview transcript docx file.
 
@@ -241,6 +244,8 @@ def clean_transcript(input_path: str, output_dir: str, api_key: str) -> str:
         input_path: Path to the raw transcript .docx file
         output_dir: Directory to save the cleaned file
         api_key: Anthropic API key for Claude calls
+        base_url: Custom Anthropic API base URL (e.g. CloudFront proxy)
+        model: Model name to use for semantic processing
 
     Returns:
         Path to the cleaned output file
@@ -262,7 +267,7 @@ def clean_transcript(input_path: str, output_dir: str, api_key: str) -> str:
     segments = _merge_same_speaker(segments)
     segments = [s for s in segments if s["text"].strip()]
 
-    segments = _call_claude_for_semantic_processing(segments, api_key)
+    segments = _call_claude_for_semantic_processing(segments, api_key, base_url, model)
 
     input_name = Path(input_path).stem
     title = f"{input_name}（清洗版）"

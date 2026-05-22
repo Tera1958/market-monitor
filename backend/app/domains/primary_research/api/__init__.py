@@ -38,7 +38,13 @@ def _process_transcript(interview_id: str, input_path: str):
             return
 
         try:
-            output_path = clean_transcript(input_path, str(OUTPUT_DIR), api_key)
+            output_path = clean_transcript(
+                input_path,
+                str(OUTPUT_DIR),
+                api_key,
+                base_url=app_settings.anthropic_base_url,
+                model=app_settings.anthropic_model,
+            )
             interview.transcript_cleaned = output_path
             interview.status = "completed"
         except Exception as e:
